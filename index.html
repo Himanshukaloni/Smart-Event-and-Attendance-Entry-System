@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart Event — Entry & Attendance</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+  <style>
+:root {
+  --bg: #0f1724;
+  --card: #0b1220;
+  --accent: #4f46e5;
+  --muted: #9aa4b2;
+  --glass: rgba(255,255,255,0.03);
+  --text: #e6eef8;
+  --radius: 14px;
+  color-scheme: dark;
+  transition: all 0.3s ease;
+}
+
+/* LIGHT THEME VARIABLES */
+:root.light {
+  --bg: #f4f6fb;
+  --card: #ffffff;
+  --accent: #4f46e5;
+  --muted: #555;
+  --glass: rgba(0,0,0,0.05);
+  --text: #0f1724;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; transition: background 0.3s, color 0.3s; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px; margin-bottom: 18px;
+  background: linear-gradient(90deg, rgba(79,70,229,0.12), rgba(14,165,233,0.04));
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.mode-toggle {
+  background: linear-gradient(90deg, var(--accent), #06b6d4);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.container {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 1fr;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.panel {
+  background: var(--card);
+  padding: 18px;
+  border-radius: var(--radius);
+  box-shadow: 0 6px 30px rgba(2,6,23,0.7);
+}
+
+label { display: block; font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+input[type="text"], input[type="email"], input[type="date"], select {
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--glass);
+  color: var(--text);
+  outline: none;
+}
+
+input::placeholder { color: var(--muted); }
+
+.btn {
+  padding: 10px 14px;
+  margin-top: 12px;
+  background: linear-gradient(90deg, var(--accent), #06b6d4);
+  border: none;
+  color: white;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn:active { transform: translateY(1px); }
+
+.qrCard {
+  display: flex; flex-direction: column; gap: 8px; align-items: center;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-radius: 10px; margin-top: 12px;
+}
+
+#qrImg { width: 160px; height: 160px; background: white; padding: 6px; border-radius: 8px; }
+
+.attendee {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px; margin-top: 8px; border-radius: 10px;
+  background: rgba(255,255,255,0.03);
+}
+
+.small { font-size: 13px; color: var(--muted); }
+
+#eventBox {
+  margin-top: 12px;
+  background: rgba(255,255,255,0.05);
+  padding: 10px;
+  border-radius: 10px;
+}
+
+@media (min-width: 880px) {
+  .container { grid-template-columns: 1fr 420px; }
+}
+  </style>
+</head>
+
+<body>
+  <div class="topbar panel">
+    <h1>Smart Event — Entry & Attendance</h1>
+    <button id="modeToggle" class="mode-toggle">🌙 Dark Mode</button>
+  </div>
+
+  <main class="container">
+    <section class="panel">
+      <div class="row" style="display:flex; gap:12px;">
+        <div class="col" style="flex:1;">
+          <label>Attendee name</label>
+          <input id="name" type="text" placeholder="Full name" />
+        </div>
+        <div class="col" style="flex:1;">
+          <label>Email</label>
+          <input id="email" type="email" placeholder="name@example.com" />
+        </div>
+      </div>
+
+      <div class="row" style="display:flex; gap:12px;">
+        <div class="col" style="flex:1;">
+          <label>Ticket type</label>
+          <select id="ticket">
+            <option value="general">General</option>
+            <option value="vip">VIP</option>
+            <option value="speaker">Speaker</option>
+          </select>
+        </div>
+        <div class="col" style="flex:1;">
+          <label>Registration date</label>
+          <input id="date" type="date" />
+        </div>
+      </div>
+
+      <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+        <button id="addBtn" class="btn">Add attendee</button>
+        <button id="createEventBtn" class="btn" style="background:linear-gradient(90deg,#10b981,#3b82f6);">Create Event</button>
+        <input id="search" type="text" placeholder="Search attendees..."
+          style="flex:1; padding:10px 12px; border-radius:10px; background:var(--glass); border:1px solid rgba(255,255,255,0.03);" />
+      </div>
+
+      <div id="eventBox" style="display:none;">
+        <label>Event Name</label>
+        <input id="eventName" type="text" placeholder="Enter event name" />
+        <button id="saveEventBtn" class="btn" style="background:linear-gradient(90deg,#06b6d4,#6366f1);">Save Event</button>
+      </div>
+
+      <div id="attendees" style="margin-top:14px;"></div>
+    </section>
+
+    <aside class="panel">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div class="small">Event</div>
+          <h3 id="eventDisplay" style="margin:6px 0 0 0;">Hackathon — Smart Entry</h3>
+        </div>
+        <div class="small">Total: <span id="total">0</span></div>
+      </div>
+
+      <div class="qrCard">
+        <div class="small">Selected attendee QR</div>
+        <canvas id="qrImg"></canvas>
+        <div id="qrMeta" class="small">No attendee selected</div>
+        <button id="downloadQr" class="btn" style="background:linear-gradient(90deg,#06b6d4,var(--accent));">Download QR</button>
+      </div>
+
+      <div style="margin-top:12px;">
+        <button id="exportCsv" class="btn" style="width:100%;">Export CSV</button>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    // Light/Dark Mode Toggle
+    const modeBtn = document.getElementById('modeToggle');
+    const root = document.documentElement;
+    modeBtn.addEventListener('click', () => {
+      const isLight = root.classList.toggle('light');
+      modeBtn.textContent = isLight ? '🌞 Light Mode' : '🌙 Dark Mode';
+    });
+
+    // Event Creation Logic
+    const createEventBtn = document.getElementById('createEventBtn');
+    const eventBox = document.getElementById('eventBox');
+    const saveEventBtn = document.getElementById('saveEventBtn');
+    const eventInput = document.getElementById('eventName');
+    const eventDisplay = document.getElementById('eventDisplay');
+
+    let currentEvent = localStorage.getItem('current_event') || 'Hackathon — Smart Entry';
+    eventDisplay.textContent = currentEvent;
+
+    createEventBtn.addEventListener('click', () => {
+      eventBox.style.display = eventBox.style.display === 'none' ? 'block' : 'none';
+    });
+
+    saveEventBtn.addEventListener('click', () => {
+      const name = eventInput.value.trim();
+      if (!name) return alert('Please enter an event name');
+      currentEvent = name;
+      localStorage.setItem('current_event', name);
+      eventDisplay.textContent = name;
+      eventInput.value = '';
+      eventBox.style.display = 'none';
+      gsap.fromTo(eventDisplay, {scale:1.1, color:'#06b6d4'}, {scale:1, color:'', duration:0.6});
+    });
+
+    // Attendee Logic
+    const attendeesEl = document.getElementById('attendees');
+    const totalEl = document.getElementById('total');
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const ticketInput = document.getElementById('ticket');
+    const dateInput = document.getElementById('date');
+    const addBtn = document.getElementById('addBtn');
+    const search = document.getElementById('search');
+    const qrCanvas = document.getElementById('qrImg');
+    const qrMeta = document.getElementById('qrMeta');
+    const downloadQr = document.getElementById('downloadQr');
+    const exportCsv = document.getElementById('exportCsv');
+
+    let attendees = JSON.parse(localStorage.getItem('attendees_v1') || '[]');
+    let selected = null;
+    function save(){ localStorage.setItem('attendees_v1', JSON.stringify(attendees)); }
+
+    function render(filter=''){
+      attendeesEl.innerHTML='';
+      const list = attendees.filter(a => (a.name + ' ' + a.email + ' ' + a.ticket).toLowerCase().includes(filter.toLowerCase()));
+      totalEl.textContent = list.length;
+      list.forEach((a, idx)=>{
+        const div = document.createElement('div');
+        div.className = 'attendee';
+        div.innerHTML = `
+          <div style="display:flex;gap:12px;align-items:center;">
+            <div style="width:44px;height:44px;border-radius:8px;background:linear-gradient(90deg,rgba(79,70,229,0.14),rgba(6,182,212,0.07));display:flex;align-items:center;justify-content:center;font-weight:700">${a.name.split(' ').map(s=>s[0]||'').slice(0,2).join('')}</div>
+            <div>
+              <div style="font-weight:600;">${a.name}</div>
+              <div class="small">${a.email} • ${a.ticket}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button data-idx="${idx}" class="btn small showQrBtn" style="padding:6px 10px; font-weight:600;">QR</button>
+            <button data-idx="${idx}" class="btn small removeBtn" style="padding:6px 10px; background:transparent;border:1px solid rgba(255,255,255,0.04);">Remove</button>
+          </div>
+        `;
+        attendeesEl.appendChild(div);
+        gsap.from(div, {duration:0.5, y:8, opacity:0, delay: idx*0.03});
+      });
+
+      document.querySelectorAll('.showQrBtn').forEach(btn=> btn.addEventListener('click', ()=>{
+        const idx = Number(btn.getAttribute('data-idx'));
+        selectAttendee(idx);
+      }));
+      document.querySelectorAll('.removeBtn').forEach(btn=> btn.addEventListener('click', ()=>{
+        const idx = Number(btn.getAttribute('data-idx'));
+        attendees.splice(idx,1);
+        save(); render(search.value);
+      }));
+    }
+
+    function addAttendee(){
+      const name = nameInput.value.trim();
+      const email = emailInput.value.trim();
+      const ticket = ticketInput.value;
+      const date = dateInput.value || new Date().toISOString().slice(0,10);
+      if(!name || !email) return alert('Please provide name and email');
+      attendees.push({name,email,ticket,date,event:currentEvent,id:Date.now()});
+      save(); render(search.value);
+      nameInput.value = emailInput.value = '';
+      gsap.fromTo(totalEl, {scale:1},{scale:1.06,duration:0.12,yoyo:true,repeat:1});
+    }
+
+    function selectAttendee(idx){
+      selected = attendees[idx];
+      qrMeta.textContent = `${selected.name} — ${selected.ticket}`;
+      new QRious({element: qrCanvas, value: JSON.stringify(selected), size: 300, level: 'H'});
+    }
+
+    downloadQr.addEventListener('click', ()=>{
+      if(!selected) return alert('Select an attendee first');
+      const link = document.createElement('a');
+      link.href = qrCanvas.toDataURL('image/png');
+      link.download = (selected.name.replace(/\s+/g,'_')||'qr') + '.png';
+      link.click();
+    });
+
+    exportCsv.addEventListener('click', ()=>{
+      if(!attendees.length) return alert('No attendees to export');
+      const rows = [['Name','Email','Ticket','Date','Event']];
+      attendees.forEach(a=> rows.push([a.name,a.email,a.ticket,a.date,a.event]));
+      const csv = rows.map(r => r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'attendees.csv'; a.click(); URL.revokeObjectURL(url);
+    });
+
+    addBtn.addEventListener('click', addAttendee);
+    search.addEventListener('input', ()=> render(search.value));
+    render();
+  </script>
+</body>
+</html>
